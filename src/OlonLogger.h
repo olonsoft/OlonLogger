@@ -2,11 +2,11 @@
 
 #include <Arduino.h>
 #include <Print.h>
+#include <vector>    // For std::vector
 #include <StreamString.h>
-#include <stdarg.h>  // For va_list, va_start, va_end
+// #include <stdarg.h>  // For va_list, va_start, va_end
 
-#define OLON_LOG_VERSION "1.1.0"
-
+#define OLON_LOG_VERSION "1.1.1"
 #define OLON_LOG_BUFFER_SIZE 256
 
 // Define log levels
@@ -24,7 +24,10 @@
 #define OLON_LOG_COLOR_BLUE   "\033[34m"  // Debug (Blue)
 
 namespace Olon {
-
+/**
+ * @brief A flexible logging library for Arduino with support for multiple outputs and log levels.
+ * @version 1.1.0
+ */
 class Logger {
  public:
   Logger()
@@ -40,7 +43,13 @@ class Logger {
   }
 
   void setOutput(Print* printer) {
-    _outputs.push_back(printer);
+    if (printer) {
+      _outputs.push_back(printer);
+    }
+  }
+
+  void removeOutput(Print* printer) {
+    _outputs.erase(std::remove(_outputs.begin(), _outputs.end(), printer), _outputs.end());
   }
 
   template <typename... Args>
@@ -65,33 +74,31 @@ class Logger {
 
   template <typename... Args>
   void log(uint8_t level, const char* tag, const char* format, Args... args) {
-    if (level > _level)
+    if (level > _level || level < OLON_LOG_LEVEL_NONE || level > OLON_LOG_LEVEL_DEBUG) {
       return;
-
-    // check if level is within range
-    if (level > OLON_LOG_LEVEL_DEBUG) return;
+    }
 
     StreamString buffer;
     buffer.reserve(OLON_LOG_BUFFER_SIZE);
 
-    // Add color based on the log level
-    buffer.print(_colors[level]);
-
-    buffer.printf("%6lu [%c] [%s] ",
-                  millis(),
-                  _codes[level],
-                  tag);
+    buffer.printf("%s%6lu [%c] [%s] ", _colors[level], millis(), _codes[level], tag);
     buffer.printf(format, args...);
 
     // Reset color after the message
     buffer.print(OLON_LOG_COLOR_RESET);
 
-    buffer.print("\r\n");
+    buffer.print("\n");
 
     for (auto& output : _outputs) {
-      output->print(buffer);
+      if (output) {
+        output->print(buffer);
+      }
     }
   }
+
+  // Prevent copying to avoid unintended behavior
+  Logger(const Logger&) = delete;
+  Logger& operator=(const Logger&) = delete;
 
  private:
   const char* _codes     = " EWID";
