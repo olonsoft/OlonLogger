@@ -6,7 +6,7 @@
 #include <StreamString.h>
 // #include <stdarg.h>  // For va_list, va_start, va_end
 
-#define OLON_LOG_VERSION "1.1.1"
+#define OLON_LOG_VERSION "1.1.2"
 #define OLON_LOG_BUFFER_SIZE 256
 
 // Define log levels
